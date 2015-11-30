@@ -1,0 +1,3 @@
+[submodule "packages/deck-of-cards"]
+	path = packages/deck-of-cards
+	url = git@github.com:mizzao/deck-of-cards.git
