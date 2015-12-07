@@ -1,13 +1,26 @@
 <template name="interface">
     <div class="row">
-        <div class="span12 card-holder">
-            {{> deck}}
+        <div class="col-md-12 card-holder">
+
         </div>
     </div>
 </template>
 
-<template name="deck">
-    <div class="deck">
-
+<template name="controls">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="alert alert-info">
+            Who's here:
+            {{#each users}}
+            <span class="badge">{{username}}</span>
+            {{/each}}
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <button class="btn btn-large btn-success new-scenario">New Scenario</button>
+            <button class="btn btn-large btn-danger end-scenario">End Scenario</button>
+        </div>
     </div>
 </template>
