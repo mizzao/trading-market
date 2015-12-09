@@ -6,6 +6,10 @@ Meteor.publish(null, function() {
   return Meteor.users.find({"status.online": true});
 });
 
+Meteor.publish("priceData", function(scenario) {
+  return Actions.find({scenario});
+});
+
 const cards = [0, 1, 2, 3, 4];
 
 function generateScenario() {
@@ -26,5 +30,15 @@ Meteor.methods({
     if (current != null) {
       Scenarios.update(current._id, {$set: {active: false}});
     }
+  },
+  "setPrice": function(scenario, price) {
+    check(scenario, String);
+    check(price, Number);
+
+    Actions.insert({
+      scenario,
+      price,
+      timestamp: new Date()
+    });
   }
 });

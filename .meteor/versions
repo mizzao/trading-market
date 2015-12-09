@@ -48,6 +48,7 @@ minimongo@1.0.10
 mizzao:accounts-testing@0.1.0
 mizzao:bootboxjs@4.4.0
 mizzao:build-fetcher@0.3.1
+mizzao:jquery-ui@1.11.4
 mizzao:timesync@0.3.4
 mizzao:user-status@0.6.6
 mobile-experience@1.0.1

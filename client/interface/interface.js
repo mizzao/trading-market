@@ -72,3 +72,5 @@ Template.controls.events({
     Meteor.call("endScenario");
   }
 });
+
+

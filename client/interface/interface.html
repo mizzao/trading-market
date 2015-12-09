@@ -9,18 +9,45 @@
 <template name="controls">
     <div class="row">
         <div class="col-md-6">
-            <div class="alert alert-info">
-            Who's here:
-            {{#each users}}
-            <span class="badge">{{username}}</span>
-            {{/each}}
-            </div>
+            {{> priceInfo}}
+        </div>
+        <div class="col-md-6">
+            {{> trade}}
         </div>
     </div>
+    <hr>
     <div class="row">
-        <div class="col-md-12">
+        <div class="col-md-6">
+            <div class="alert alert-info">
+                Who's here:
+                {{#each users}}
+                    <span class="badge">{{username}}</span>
+                {{/each}}
+            </div>
+        </div>
+        <div class="col-md-6">
             <button class="btn btn-large btn-success new-scenario">New Scenario</button>
             <button class="btn btn-large btn-danger end-scenario">End Scenario</button>
         </div>
+    </div>
+</template>
+
+<template name="priceInfo">
+    <h3>Price Information</h3>
+    <svg width="100%" height="160">
+        <g class="chart">
+            <g class="x axis"></g>
+            <g class="y axis"></g>
+            <path class="line"></path>
+        </g>
+    </svg>
+</template>
+
+<template name="trade">
+    <h3>Trade</h3>
+    <div class="alert alert-success">
+        Set new price: <div class="slider"></div>
+        <kbd class="amount">...</kbd>
+        <button class="btn btn-large btn-primary set-price">Do it!</button>
     </div>
 </template>
