@@ -11,18 +11,33 @@ Meteor.publish("priceData", function(scenario) {
 });
 
 const cards = [0, 1, 2, 3, 4];
+const positions = [0, 1, 2, 3];
 
-function generateScenario() {
-  Scenarios.insert({
+function generateScenario(showHistory) {
+  // Get all online users, give them turns and positions
+  const users = Meteor.users.find({"status.online": true}).map((u) => u._id);
+
+  const id = Scenarios.insert({
     active: true,
+    showHistory,
+    users,
     cardSetup: _.shuffle(cards)
+  });
+
+  _.shuffle(users).forEach(function(userId, i) {
+    Actions.insert({
+      userId,
+      scenario: id,
+      position: _.sample(positions),
+      turn: i
+    });
   });
 }
 
 Meteor.methods({
-  "newScenario": function() {
+  "newScenario": function(showHistory) {
     Meteor.call("endScenario");
-    generateScenario();
+    generateScenario(showHistory);
   },
   "endScenario": function () {
     const current = Scenarios.findOne({active: true});
@@ -35,10 +50,15 @@ Meteor.methods({
     check(scenario, String);
     check(price, Number);
 
-    Actions.insert({
-      scenario,
+    const turn = Actions.findOne({scenario, price: null}, {sort: {turn: 1}});
+
+    if( !turn || turn.userId !== Meteor.userId()) {
+      throw new Meteor.Error(403, "It's not your turn!");
+    }
+
+    Actions.update(turn._id, { $set: {
       price,
       timestamp: new Date()
-    });
+    }});
   }
 });

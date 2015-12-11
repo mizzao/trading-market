@@ -9,10 +9,27 @@
 <template name="controls">
     <div class="row">
         <div class="col-md-6">
+            {{#if showHistory}}
+            <h3>Price History</h3>
             {{> priceInfo}}
+            {{else}}
+                <h3>Last Price</h3>
+                {{#if myTurn}}
+                    {{> priceLast}}
+                {{else}}
+                    <div class="alert alert-danger">
+                        You get to see the price on your turn.
+                    </div>
+                {{/if}}
+            {{/if}}
         </div>
         <div class="col-md-6">
+            <h3>Trade</h3>
+            {{#if myTurn}}
             {{> trade}}
+            {{else}}
+            {{> waiting}}
+            {{/if}}
         </div>
     </div>
     <hr>
@@ -26,15 +43,19 @@
             </div>
         </div>
         <div class="col-md-6">
-            <button class="btn btn-large btn-success new-scenario">New Scenario</button>
+            <button class="btn btn-large btn-success new-scenario hist">
+                New Scenario (History)
+            </button>
+            <button class="btn btn-large btn-primary new-scenario last">
+                New Scenario (Last Price)
+            </button>
             <button class="btn btn-large btn-danger end-scenario">End Scenario</button>
         </div>
     </div>
 </template>
 
 <template name="priceInfo">
-    <h3>Price Information</h3>
-    <svg width="100%" height="160">
+    <svg width="100%" height="250">
         <g class="chart">
             <g class="x axis"></g>
             <g class="y axis"></g>
@@ -43,11 +64,25 @@
     </svg>
 </template>
 
+<template name="priceLast">
+    <svg width="50%" height="250">
+        <g class="chart">
+            <g class="y axis"></g>
+            <path class="line"></path>
+        </g>
+    </svg>
+</template>
+
 <template name="trade">
-    <h3>Trade</h3>
     <div class="alert alert-success">
         Set new price: <div class="slider"></div>
         <kbd class="amount">...</kbd>
         <button class="btn btn-large btn-primary set-price">Do it!</button>
+    </div>
+</template>
+
+<template name="waiting">
+    <div class="alert alert-warning">
+        Waiting for your turn...
     </div>
 </template>

@@ -6,7 +6,6 @@ Template.interface.onRendered(function() {
     const cards = deck.cards;
 
     cards.forEach(function(card, j) {
-      card.setSide('back');
       const position = arrangement.indexOf(card.i);
 
       // Shift left two and rightmost cards
@@ -23,9 +22,22 @@ Template.interface.onRendered(function() {
         duration: 500,
         x: Math.round((placement - 2.05) * 140),
         y: Math.round(110),
-        rot: 0
+        rot: 0,
+        onComplete: function() {
+          cb(j);
+        }
       })
 
+    });
+
+    function cb(j) {
+      if (j === cards.length - 1) next();
+    }
+  }
+
+  function hide(next) {
+    deck.cards.forEach(function(card) {
+      card.setSide('back');
     });
 
     next();
@@ -40,6 +52,7 @@ Template.interface.onRendered(function() {
   }
 
   deck.arrange = deck.queued(arrange);
+  deck.hide = deck.queued(hide);
   deck.reveal = deck.queued(reveal);
 
   deck.mount(this.find(".card-holder"));
@@ -48,6 +61,9 @@ Template.interface.onRendered(function() {
 
   deck.poker();
 
+  let setup;
+
+  // Initial shuffle
   this.autorun(function() {
     const current = Scenarios.findOne();
     if (current == null) {
@@ -55,18 +71,67 @@ Template.interface.onRendered(function() {
       return;
     }
 
-    deck.shuffle();
+    deck.hide();
+
+    for (i of Array(5)) deck.shuffle();
+
     deck.arrange([current.cardSetup]);
+
+    setup = current.cardSetup;
   });
+
+  // Reveal one card
+  this.autorun(function() {
+    const myTurn = Actions.findOne({userId: Meteor.userId()}, {fields: {position: 1}});
+    if( !myTurn ) return;
+
+    const revealed = setup[myTurn.position];
+    console.log(`Showing card at position ${myTurn.position}: ${revealed}`);
+
+    deck.queue(function(next) {
+      deck.cards.find((c) => c.i == revealed).setSide('front');
+      next()
+    });
+  });
+
+  // Final reveal
+  this.autorun(function() {
+    const current = Scenarios.findOne();
+    if (current && current.users.length === Actions.find({
+        price: {$ne: null},
+        scenario: current._id
+      }).count()) {
+      console.log("Done, showing all cards");
+      deck.reveal();
+    }
+  })
+
 });
 
 Template.controls.helpers({
-  users: function() { return Meteor.users.find(); }
+  showHistory: function() {
+    const scenario = Scenarios.findOne();
+    return scenario && scenario.showHistory ||
+      Actions.find({price: null}).count() == 0;
+  },
+  users: function() {
+    return Meteor.users.find();
+  },
+  myTurn: function() {
+    const userId = Meteor.userId();
+    if (!userId) return false;
+
+    const turn = Actions.findOne({price: null}, {sort: {turn: 1}});
+    if( turn && turn.userId === userId ) return true;
+  }
 });
 
 Template.controls.events({
-  "click .new-scenario": function(e) {
-    Meteor.call("newScenario");
+  "click .new-scenario.hist": function(e) {
+    Meteor.call("newScenario", true);
+  },
+  "click .new-scenario.last": function(e) {
+    Meteor.call("newScenario", false);
   },
   "click .end-scenario": function(e) {
     Meteor.call("endScenario");

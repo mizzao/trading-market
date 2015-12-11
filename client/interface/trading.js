@@ -9,8 +9,8 @@ Template.priceInfo.onRendered(function() {
   const x = d3.scale.linear().range([0, width]);
   const y = d3.scale.linear().domain([0,1]).range([height, 0]);
 
-  const xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(5);
-  const yAxis = d3.svg.axis().scale(y).orient("left").ticks(5)
+  const xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(4);
+  const yAxis = d3.svg.axis().scale(y).orient("left").ticks(10)
     .innerTickSize(-width);
 
   svg.select(".chart").attr("transform", `translate(${margin.left},${margin.top})`);
@@ -27,7 +27,7 @@ Template.priceInfo.onRendered(function() {
     .y(d => y(d.price));
 
   this.autorun(function () {
-    const data = Actions.find({}, {sort: {timestamp: 1}}).fetch();
+    const data = Actions.find({price: {$ne: null}}, {sort: {timestamp: 1}}).fetch();
     const result = [ {price: 0.5} ].concat(data);
 
     if (data.length == 0) {
@@ -40,6 +40,45 @@ Template.priceInfo.onRendered(function() {
     }
 
     svgX.call(xAxis);
+  });
+});
+
+Template.priceLast.onRendered(function() {
+  const svg = d3.select(this.find("svg"));
+  const $svg = this.$("svg");
+
+  const margin = { left: 40, bottom: 30, top: 10, right: 10 };
+  const width = $svg.width() - margin.left - margin.right;
+  const height = $svg.height() - margin.bottom - margin.top;
+
+  const x = d3.scale.linear().domain([0,1]).range([0, width]);
+  const y = d3.scale.linear().domain([0,1]).range([height, 0]);
+
+  const yAxis = d3.svg.axis().scale(y).orient("left").ticks(10)
+    .innerTickSize(-width);
+
+  svg.select(".chart").attr("transform", `translate(${margin.left},${margin.top})`);
+
+  svg.select(".y.axis").call(yAxis);
+
+  const path = d3.select("path.line");
+
+  const valueline = d3.svg.line()
+    .x((d, i) => x(i))
+    .y(d => y(d.price));
+
+  this.autorun(function () {
+    const data = Actions.findOne({price: {$ne: null}}, {sort: {timestamp: -1}, limit: 1});
+    let result;
+
+    if (data) {
+      result = [data, data];
+    }
+    else {
+      result = [ {price: 0.5}, {price: 0.5} ];
+    }
+
+    path.attr("d", valueline(result));
   });
 });
 
@@ -67,6 +106,8 @@ Template.trade.events({
       return;
     }
 
-    Meteor.call("setPrice", currentScenario._id, value);
+    Meteor.call("setPrice", currentScenario._id, value, function(err) {
+      if (err) bootbox.alert(err);
+    });
   }
 });
