@@ -60,5 +60,25 @@ Meteor.methods({
       price,
       timestamp: new Date()
     }});
+  },
+  "downloadActions": function() {
+    const scenarios = Scenarios.find({users: {$size: 4}}).fetch();
+
+    const actions = [];
+
+    for (s of scenarios) {
+      Actions.find({scenario: s._id, price: {$ne: null}}).forEach((action) => {
+        action.showHistory = s.showHistory;
+        action.cardSetup = JSON.stringify(s.cardSetup);
+        actions.push(action);
+      })
+    }
+
+    actions.sort((a, b) => a.timestamp - b.timestamp);
+
+    return json2csv({data: actions, fields: [
+      "scenario", "cardSetup", "showHistory", "userId", "turn",
+      "price", "position", "timestamp"
+    ]});
   }
 });

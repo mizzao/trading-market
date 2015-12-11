@@ -135,6 +135,18 @@ Template.controls.events({
   },
   "click .end-scenario": function(e) {
     Meteor.call("endScenario");
+  },
+  "click .download-data": function(e) {
+    Meteor.call("downloadActions", function(err, res) {
+      if (err) bootbox.alert(err);
+      else {
+        // http://stackoverflow.com/a/18197511/586086
+        const pom = document.createElement('a');
+        pom.setAttribute("href", "data:text/csv," + encodeURIComponent(res));
+        pom.setAttribute("download", "data.csv");
+        pom.click();
+      }
+    });
   }
 });
 
