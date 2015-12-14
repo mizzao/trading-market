@@ -65,33 +65,53 @@ Template.priceLast.onRendered(function() {
 
   const valueline = d3.svg.line()
     .x((d, i) => x(i))
-    .y(d => y(d.price));
+    .y(d => y(d));
 
   this.autorun(function () {
-    const data = Actions.findOne({price: {$ne: null}}, {sort: {timestamp: -1}, limit: 1});
-    let result;
-
-    if (data) {
-      result = [data, data];
-    }
-    else {
-      result = [ {price: 0.5}, {price: 0.5} ];
-    }
+    const data = lastPrice();
+    const result = [data, data];
 
     path.attr("d", valueline(result));
   });
 });
 
-Template.trade.onRendered(function() {
-  const $disp = this.$(".amount");
+function lastPrice() {
+  const last = Actions.findOne({price: {$ne: null}}, {sort: {timestamp: -1}, limit: 1});
+  return last && last.price || 0.5;
+}
 
+Template.trade.onCreated(function() {
+  // Not reactive, make sure this template only renders once last price shows
+  this.sliderVal = new ReactiveVar(lastPrice());
+});
+
+Template.trade.helpers({
+  leftProb: function() {
+    const prob = Template.instance().sliderVal.get();
+    return (1-prob).toFixed(2);
+  },
+  rightProb: function() {
+    const prob = Template.instance().sliderVal.get();
+    return prob.toFixed(2);
+  },
+  leftWin: function() {
+    const prob = Template.instance().sliderVal.get();
+    return Scoring.lsr(lastPrice(), prob, false);
+  },
+  rightWin: function() {
+    const prob = Template.instance().sliderVal.get();
+    return Scoring.lsr(lastPrice(), prob, true);
+  }
+});
+
+Template.trade.onRendered(function() {
   this.$(".slider").slider({
-    min: 0.0,
-    max: 1.0,
+    min: 0.01,
+    max: 0.99,
     step: 0.01,
-    value: 0.5,
-    slide: function(event, ui) {
-      $disp.text( ui.value.toFixed(2) );
+    value: this.sliderVal.get(),
+    slide: (event, ui) => {
+      this.sliderVal.set(ui.value);
     }
   });
 });
@@ -109,5 +129,36 @@ Template.trade.events({
     Meteor.call("setPrice", currentScenario._id, value, function(err) {
       if (err) bootbox.alert(err);
     });
+  }
+});
+
+Template.profitBadge.helpers({
+  color: function() {
+    if (this < 0) return "alert-danger";
+    return "alert-success";
+  },
+  formatted: function () {
+    const text = this && this.toFixed && this.toFixed(3);
+    return this > 0 ? "+" + text: text;
+  }
+});
+
+Template.userTable.helpers({
+  actions: function() {
+    return Actions.find({}, {sort: {turn: 1}})
+  },
+  rowStyle: function () {
+    return this.price ? "info" : "warning";
+  },
+  username: function() {
+    const user = Meteor.users.findOne(this.userId);
+    return user && user.username;
+  },
+  lastPayoff: function() {
+    return this.payoff && this.payoff;
+  },
+  totalPayoff: function() {
+    const user = Meteor.users.findOne(this.userId);
+    return user && user.profit;
   }
 });

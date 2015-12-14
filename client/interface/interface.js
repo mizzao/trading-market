@@ -96,15 +96,10 @@ Template.interface.onRendered(function() {
 
   // Final reveal
   this.autorun(function() {
-    const current = Scenarios.findOne();
-    if (current && current.users.length === Actions.find({
-        price: {$ne: null},
-        scenario: current._id
-      }).count()) {
-      console.log("Done, showing all cards");
+    if( Session.equals("cardState", "completed")) {
       deck.reveal();
     }
-  })
+  });
 
 });
 
@@ -135,6 +130,9 @@ Template.controls.events({
   },
   "click .end-scenario": function(e) {
     Meteor.call("endScenario");
+  },
+  "click .reset-profit": function(e) {
+    Meteor.call("resetProfit");
   },
   "click .download-data": function(e) {
     Meteor.call("downloadActions", function(err, res) {

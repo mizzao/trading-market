@@ -8,6 +8,15 @@
 
 <template name="controls">
     <div class="row">
+        <div class="col-md-7 col-md-offset-2">
+            {{#if myTurn}}
+                {{> trade}}
+            {{else}}
+                {{> waiting}}
+            {{/if}}
+        </div>
+    </div>
+    <div class="row">
         <div class="col-md-6">
             {{#if showHistory}}
             <h3>Price History</h3>
@@ -24,17 +33,12 @@
             {{/if}}
         </div>
         <div class="col-md-6">
-            <h3>Trade</h3>
-            {{#if myTurn}}
-            {{> trade}}
-            {{else}}
-            {{> waiting}}
-            {{/if}}
+            {{> userTable}}
         </div>
     </div>
     <hr>
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-12">
             <div class="alert alert-info">
                 Who's here:
                 {{#each users}}
@@ -42,7 +46,7 @@
                 {{/each}}
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-12">
             <button class="btn btn-large btn-success new-scenario hist">
                 New Scenario (History)
             </button>
@@ -52,7 +56,10 @@
             <button class="btn btn-large btn-danger end-scenario">
                 End Scenario
             </button>
-            <button class="btn btn-large btn-warning download-data">
+            <button class="btn btn-large btn-warning reset-profit">
+                Reset Profits
+            </button>
+            <button class="btn btn-large btn-info download-data">
                 Download Data
             </button>
         </div>
@@ -79,15 +86,41 @@
 </template>
 
 <template name="trade">
-    <div class="alert alert-success">
-        Set new price: <div class="slider"></div>
-        <kbd class="amount">...</kbd>
-        <button class="btn btn-large btn-primary set-price">Do it!</button>
-    </div>
+    <kbd class="amount left">{{leftProb}}</kbd>
+    {{> profitBadge leftWin}}
+    <div class="slider"></div>
+    <kbd class="amount right">{{rightProb}}</kbd>
+    {{> profitBadge rightWin}}
+    <button class="btn btn-large btn-primary set-price">Update</button>
+</template>
+
+<template name="profitBadge">
+    <span class="badge {{color}}">{{formatted}}</span>
 </template>
 
 <template name="waiting">
     <div class="alert alert-warning">
         Waiting for your turn...
     </div>
+</template>
+
+<template name="userTable">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+            <th>User</th>
+            <th>Last Profit</th>
+            <th>Total Profit</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each actions}}
+            <tr class={{rowStyle}}>
+            <td>{{username}}</td>
+            <td>{{> profitBadge lastPayoff}}</td>
+            <td>{{> profitBadge totalPayoff}}</td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
 </template>
