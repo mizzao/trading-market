@@ -89,6 +89,7 @@ Meteor.methods({
 
     for (s of scenarios) {
       Actions.find({scenario: s._id, price: {$ne: null}}).forEach((action) => {
+        action.outcome = s.outcome;
         action.showHistory = s.showHistory;
         action.cardSetup = JSON.stringify(s.cardSetup);
         actions.push(action);
@@ -98,8 +99,8 @@ Meteor.methods({
     actions.sort((a, b) => a.timestamp - b.timestamp);
 
     return json2csv({data: actions, fields: [
-      "scenario", "cardSetup", "showHistory", "userId", "turn",
-      "price", "position", "timestamp"
+      "scenario", "showHistory", "cardSetup", "outcome", "userId", "position",
+      "turn", "price", "payoff", "timestamp"
     ]});
   }
 });
