@@ -1,21 +1,22 @@
 Tracker.autorun(function() {
   const activeScenario = Scenarios.findOne();
   if (! activeScenario) return;
+
+  Meteor.subscribe("setup", activeScenario.setup);
   Meteor.subscribe("priceData", activeScenario._id);
 });
 
 // Update the different game states
 Tracker.autorun(function () {
-  const current = Scenarios.findOne();
+  const current = Setups.findOne();
 
   if (!current) {
     Session.set("cardState", null);
     return;
   }
 
-  if (current && current.users.length === Actions.find({
-      price: {$ne: null},
-      scenario: current._id
+  if (current && current.revealedPositions.length === Actions.find({
+      price: {$ne: null}
     }).count()) {
     console.log("Scenario done");
 

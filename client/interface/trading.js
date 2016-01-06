@@ -77,7 +77,8 @@ Template.priceLast.onRendered(function() {
 
 function lastPrice() {
   const last = Actions.findOne({price: {$ne: null}}, {sort: {timestamp: -1}, limit: 1});
-  return last && last.price || 0.5;
+  if (last) return last.price;
+  return 0.5;
 }
 
 Template.trade.onCreated(function() {

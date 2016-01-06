@@ -65,7 +65,7 @@ Template.interface.onRendered(function() {
 
   // Initial shuffle
   this.autorun(function() {
-    const current = Scenarios.findOne();
+    const current = Setups.findOne();
     if (current == null) {
       deck.reveal();
       return;
@@ -77,16 +77,17 @@ Template.interface.onRendered(function() {
 
     deck.arrange([current.cardSetup]);
 
-    setup = current.cardSetup;
+    setup = current;
   });
 
   // Reveal one card
   this.autorun(function() {
-    const myTurn = Actions.findOne({userId: Meteor.userId()}, {fields: {position: 1}});
+    const myTurn = Actions.findOne({userId: Meteor.userId()}, {fields: {turn: 1}});
     if( !myTurn ) return;
 
-    const revealed = setup[myTurn.position];
-    console.log(`Showing card at position ${myTurn.position}: ${revealed}`);
+    const position = setup.revealedPositions[myTurn.turn];
+    const revealed = setup.cardSetup[position];
+    console.log(`Showing card at position ${position}: ${revealed}`);
 
     deck.queue(function(next) {
       deck.cards.find((c) => c.i == revealed).setSide('front');
@@ -121,15 +122,19 @@ Template.controls.helpers({
   }
 });
 
+function alertIfError(err) {
+  if (err) bootbox.alert(err);
+}
+
 Template.controls.events({
-  "click .new-scenario.hist": function(e) {
-    Meteor.call("newScenario", true);
+  "click .new-set.hist": function(e) {
+    Meteor.call("newScenarioSet", true, alertIfError);
   },
-  "click .new-scenario.last": function(e) {
-    Meteor.call("newScenario", false);
+  "click .new-set.last": function(e) {
+    Meteor.call("newScenarioSet", false, alertIfError);
   },
-  "click .end-scenario": function(e) {
-    Meteor.call("endScenario");
+  "click .next-scenario": function(e) {
+    Meteor.call("nextScenario", alertIfError);
   },
   "click .reset-profit": function(e) {
     Meteor.call("resetProfit");

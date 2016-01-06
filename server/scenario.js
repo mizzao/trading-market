@@ -11,6 +11,10 @@ Meteor.publish(null, function() {
   });
 });
 
+Meteor.publish("setup", function(id) {
+  return Setups.find(id);
+});
+
 Meteor.publish("priceData", function(scenario) {
   return Actions.find({scenario});
 });
@@ -18,9 +22,8 @@ Meteor.publish("priceData", function(scenario) {
 const cards = [0, 1, 2, 3, 4];
 const positions = [0, 1, 2, 3];
 
-function generateScenario(showHistory) {
-  // Get all online users, give them turns and positions
-  const users = Meteor.users.find({"status.online": true}).map((u) => u._id);
+function generateSetup(numUsers) {
+
   const setup = _.shuffle(cards);
   const left = setup[0] + setup[1],
     right = setup[2] + setup[3];
@@ -30,35 +33,76 @@ function generateScenario(showHistory) {
 
   const outcome = (left !== right) ? (right > left) : tb;
 
-  const id = Scenarios.insert({
-    active: true,
-    showHistory,
-    users,
-    cardSetup: setup,
-    outcome
-  });
+  const revealed = [];
 
-  _.shuffle(users).forEach(function(userId, i) {
-    Actions.insert({
-      userId,
-      scenario: id,
-      position: _.sample(positions),
-      turn: i
-    });
-  });
+  for (let x = 0; x < numUsers; x++) {
+    revealed.push(_.sample(positions));
+  }
+
+  return {
+    cardSetup: setup,
+    outcome,
+    revealedPositions: revealed
+  };
 }
 
 Meteor.methods({
-  "newScenario": function(showHistory) {
-    Meteor.call("endScenario");
-    generateScenario(showHistory);
+  // Generate setups that will be used in scenarios later
+  "generateSetups": function(numUsers, count) {
+    check(count, Match.Integer);
+
+    let x = 0;
+
+    for (; x < count; x++) {
+      Setups.insert(generateSetup(numUsers));
+    }
+
+    console.log(`${x} setups generated with ${numUsers} users each`);
+
+    return x;
   },
-  "endScenario": function () {
+  "newScenarioSet": function(showHistory) {
+    if (Scenarios.findOne({completed: false})) {
+      throw new Meteor.Error(400, "There are more existing scenarios to complete!");
+    }
+
+    // Insert setups corresponding to the scenarios in a random order
+    _.shuffle( Setups.find().map( s => s._id) ).forEach( function(id) {
+      Scenarios.insert({
+        setup: id,
+        showHistory,
+        completed: false
+      });
+    });
+
+  },
+  "nextScenario": function () {
     const current = Scenarios.findOne({active: true});
 
     if (current != null) {
-      Scenarios.update(current._id, {$set: {active: false}});
+      Scenarios.update(current._id, {$set: {active: false, completed: true}});
     }
+
+    const next = Scenarios.findOne({completed: false});
+
+    if ( !next ) throw new Meteor.Error(400, "No more scenarios to do.");
+
+    const users = Meteor.users.find({"status.online": true}).map((u) => u._id);
+    const expected = Setups.findOne(next.setup).revealedPositions.length;
+
+    if (users.length !== expected)
+      throw new Meteor.Error(400, `Wrong number of online users, need ${expected}`);
+
+    Scenarios.update(next._id, {$set: {active: true}});
+
+    _.shuffle(users).forEach(function(userId, i) {
+      Actions.insert({
+        userId,
+        scenario: next._id,
+        turn: i
+      });
+    });
+
   },
   "setPrice": function(scenario, price) {
     check(scenario, String);
@@ -83,15 +127,19 @@ Meteor.methods({
   },
   "downloadActions": function() {
     // XXX hardcoded usercount
-    const scenarios = Scenarios.find({users: {$size: 4}}).fetch();
+    const scenarios = Scenarios.find().fetch();
 
     const actions = [];
 
     for (s of scenarios) {
-      Actions.find({scenario: s._id, price: {$ne: null}}).forEach((action) => {
-        action.outcome = s.outcome;
+      const setup = Setups.findOne(s.setup);
+
+      Actions.find({scenario: s._id, price: {$ne: null}}, {sort: {turn: 1}}).forEach((action) => {
+        action.setup = setup._id;
+        action.cardSetup = JSON.stringify(setup.cardSetup);
+        action.revealed = setup.revealedPositions[action.turn];
+        action.outcome = setup.outcome;
         action.showHistory = s.showHistory;
-        action.cardSetup = JSON.stringify(s.cardSetup);
         actions.push(action);
       })
     }
@@ -99,7 +147,7 @@ Meteor.methods({
     actions.sort((a, b) => a.timestamp - b.timestamp);
 
     return json2csv({data: actions, fields: [
-      "scenario", "showHistory", "cardSetup", "outcome", "userId", "position",
+      "setup", "scenario", "showHistory", "cardSetup", "outcome", "userId", "revealed",
       "turn", "price", "payoff", "timestamp"
     ]});
   }
@@ -107,11 +155,12 @@ Meteor.methods({
 
 function updateProfits(scenario, turn) {
   const s = Scenarios.findOne(scenario);
-  if( turn !== s.users.length - 1 ) return;
+  const setup = Setups.findOne(s.setup);
+  if( turn !== setup.revealedPositions.length - 1 ) return;
 
   let last = 0.5;
   Actions.find({scenario: s._id}, {sort: {turn: 1}}).forEach(function(a) {
-    const payoff = Scoring.qsr(last, a.price, s.outcome);
+    const payoff = Scoring.qsr(last, a.price, setup.outcome);
 
     // Update this payoff and total payoff
     Actions.update(a._id, {$set: {payoff} });
