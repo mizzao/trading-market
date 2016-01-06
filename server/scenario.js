@@ -111,7 +111,7 @@ function updateProfits(scenario, turn) {
 
   let last = 0.5;
   Actions.find({scenario: s._id}, {sort: {turn: 1}}).forEach(function(a) {
-    const payoff = Scoring.lsr(last, a.price, s.outcome);
+    const payoff = Scoring.qsr(last, a.price, s.outcome);
 
     // Update this payoff and total payoff
     Actions.update(a._id, {$set: {payoff} });

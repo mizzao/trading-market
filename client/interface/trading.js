@@ -96,18 +96,18 @@ Template.trade.helpers({
   },
   leftWin: function() {
     const prob = Template.instance().sliderVal.get();
-    return Scoring.lsr(lastPrice(), prob, false);
+    return Scoring.qsr(lastPrice(), prob, false);
   },
   rightWin: function() {
     const prob = Template.instance().sliderVal.get();
-    return Scoring.lsr(lastPrice(), prob, true);
+    return Scoring.qsr(lastPrice(), prob, true);
   }
 });
 
 Template.trade.onRendered(function() {
   this.$(".slider").slider({
-    min: 0.01,
-    max: 0.99,
+    min: 0.00,
+    max: 1.00,
     step: 0.01,
     value: this.sliderVal.get(),
     slide: (event, ui) => {
