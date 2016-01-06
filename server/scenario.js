@@ -61,6 +61,18 @@ Meteor.methods({
 
     return x;
   },
+  "cleanupExtras": function() {
+    const keep = _.uniq( Actions.find({price: {$ne: null}}).map(a => a.scenario) );
+
+    console.log(`${keep.length} scenarios will be kept`);
+    console.log( Scenarios.remove({_id: {$nin: keep}}) + " scenarios removed" );
+
+    const setupsKept = _.uniq( Scenarios.find({_id: {$in: keep}}).map(s => s.setup) );
+
+    console.log(`${setupsKept.length} setups will be kept`);
+
+    console.log( Setups.remove({_id: {$nin: setupsKept}}) + " setups removed" );
+  },
   "newScenarioSet": function(showHistory) {
     if (Scenarios.findOne({completed: false})) {
       throw new Meteor.Error(400, "There are more existing scenarios to complete!");
